@@ -42,11 +42,11 @@ export default function Login() {
             <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-primary">
               <Sparkles size={19} className="text-white" />
             </div>
-            <span className="text-xl font-extrabold text-primary-700" style={{ fontFamily: 'Outfit, sans-serif' }}>ResumeAI</span>
+            <span className="text-xl font-extrabold text-primary-700" style={{ fontFamily: 'Outfit, sans-serif' }}>NextOffer</span>
           </Link>
 
           <h1 className="text-3xl font-extrabold mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
-            Welcome to ResumeAI
+            Welcome to NextOffer
           </h1>
           <p className="text-slate-500 text-sm leading-relaxed mb-8">
             Sign in with Google to access your AI-powered resume builder.
@@ -112,10 +112,7 @@ export default function Login() {
 
         {/* Setup badge */}
         <div className="mt-5 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-500/15 border border-amber-400/30 text-amber-200 text-xs font-medium">
-            <span>⚙️</span>
-            <span>Add <code className="font-mono">GOOGLE_CLIENT_ID</code> + <code className="font-mono">GOOGLE_CLIENT_SECRET</code> to <code className="font-mono">.env</code></span>
-          </div>
+      
         </div>
       </div>
     </div>

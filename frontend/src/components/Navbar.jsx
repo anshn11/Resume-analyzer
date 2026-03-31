@@ -42,7 +42,7 @@ export default function Navbar() {
             <Sparkles size={17} className="text-white" />
           </div>
           <span className={`font-display text-xl font-extrabold transition-colors ${isHome && !scrolled ? 'text-white' : 'text-primary-700'}`}>
-            ResumeAI
+            NextOffer
           </span>
         </Link>
 

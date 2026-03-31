@@ -8,7 +8,7 @@ const FEATURES = [
   { icon: Brain,          title: 'AI-Powered Writing',   desc: 'Let Gemini AI craft compelling bullet points and summaries that pass ATS filters.' },
   { icon: LayoutTemplate, title: '4 Premium Templates',  desc: 'Classic, Modern, Minimal, and Creative designs by professional resume experts.' },
   { icon: Palette,        title: '10 Accent Colors',     desc: 'Customize your accent color to match your personal brand and industry.' },
-  { icon: Download,       title: 'Instant PDF Export',   desc: 'Download a pixel-perfect PDF in one click. Optimized for digital and print.' },
+  { icon: Download,       title: 'Instant Print & PDF', desc: 'Download a pixel-perfect PDF or print directly in one click.' },
   { icon: Zap,            title: 'Real-Time Preview',    desc: 'See every change live with our side-by-side preview. WYSIWYG.' },
   { icon: Shield,         title: 'Secure & Private',     desc: 'Your data stays on your device. Toggle public or private anytime.' },
 ];
@@ -21,7 +21,7 @@ const STEPS = [
 ];
 
 const TESTIMONIALS = [
-  { name: 'Priya Sharma',    role: 'Software Engineer @ Google',    avatar: 'PS', text: 'ResumeAI got me 3× more callbacks in a week. The AI bullet points were incredibly specific. Landed my dream job!', rating: 5 },
+  { name: 'Priya Sharma',    role: 'Software Engineer @ Google',    avatar: 'PS', text: 'NextOffer got me 3× more callbacks in a week. The AI bullet points were incredibly specific. Landed my dream job!', rating: 5 },
   { name: 'Rahul Gupta',     role: 'Product Manager @ Microsoft',   avatar: 'RG', text: "I tried many resume builders but this is on another level. The live preview is seamless and templates look premium.", rating: 5 },
   { name: 'Aisha Khan',      role: 'Data Scientist @ Amazon',       avatar: 'AK', text: "As a fresh grad I had no idea how to write my resume. The AI suggestions gave me confidence. My resume looks industry-level.", rating: 5 },
 ];
@@ -86,7 +86,7 @@ export default function Landing() {
                 <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                <span className="ml-3 text-xs text-slate-400 font-medium">My Resume — ResumeAI</span>
+                <span className="ml-3 text-xs text-slate-400 font-medium">My Resume — NextOffer</span>
               </div>
               {/* Resume preview */}
               <div className="p-5 bg-gradient-to-r from-primary-50 to-white flex items-center gap-4 border-b border-slate-100">
@@ -275,7 +275,7 @@ export default function Landing() {
             Ready to Land Your Dream Job?
           </h2>
           <p className="text-lg text-white/70 mb-10 leading-relaxed">
-            Join 50,000+ professionals who built their resumes with ResumeAI. Free, fast, and powerful.
+            Join 50,000+ professionals who built their resumes with NextOffer. Free, fast, and powerful.
           </p>
           <Link to="/login" className="btn-primary text-lg px-10 py-4 rounded-full no-underline inline-flex shadow-glow-lg">
             Start Building Now — It's Free <ArrowRight size={19} />
@@ -295,7 +295,7 @@ export default function Landing() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center"><Sparkles size={15} className="text-white" /></div>
-                <span className="text-white font-bold text-lg">ResumeAI</span>
+                <span className="text-white font-bold text-lg">NextOffer</span>
               </div>
               <p className="text-sm leading-relaxed">AI-powered resume builder for modern professionals.</p>
             </div>
@@ -316,7 +316,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="pt-6 text-center text-xs text-slate-600">
-            © 2025 ResumeAI. Built with ❤️ and AI.
+            © 2025 NextOffer. Built with ❤️ and AI.
           </div>
         </div>
       </footer>

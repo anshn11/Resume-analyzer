@@ -28,7 +28,7 @@ app.use(express.json());
 // ── Session ───────────────────────────────────────────────
 app.use(
   session({
-    secret:            process.env.SESSION_SECRET || 'resumeai-dev-secret-change-in-prod',
+    secret:            process.env.SESSION_SECRET || 'nextoffer-dev-secret-change-in-prod',
     resave:            false,
     saveUninitialized: false,
     cookie: {

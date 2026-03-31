@@ -166,7 +166,7 @@ export default function Builder() {
             <Save size={13} /> Save
           </button>
           <button className="btn-primary text-xs px-3.5 py-2 rounded-full" onClick={handleDownload}>
-            <Download size={13} /> PDF
+            <Download size={13} /> Print
           </button>
         </div>
       </header>
@@ -272,7 +272,7 @@ export default function Builder() {
               </button>
             ) : (
               <button className="btn-primary text-sm px-5 py-2.5 rounded-full" onClick={handleDownload}>
-                <Download size={15} /> Download PDF
+                <Download size={15} /> Print Resume
               </button>
             )}
           </div>
