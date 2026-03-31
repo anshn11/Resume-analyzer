@@ -89,9 +89,9 @@
 }
 
 .skill-tag {
-  background: #ede9fe; /* fallback for color-mix */
-  color: #7c3aed;
-  border: 1px solid #c4b5fd; /* fallback for color-mix */
+  background: var(--accent, #ede9fe);
+  color: white;
+  border: 1px solid var(--accent, #c4b5fd);
   border-radius: 4px;
   padding: 2px 8px;
   font-size: 10px;
@@ -211,13 +211,13 @@
 
 .modern-skills { display: flex; flex-wrap: wrap; gap: 4px; }
 .modern-skill-tag {
-  background: rgba(255,255,255,0.15);
+  background: var(--accent, #ede9fe);
   color: white;
   border-radius: 3px;
   padding: 2px 7px;
   font-size: 9px;
   font-weight: 600;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid var(--accent, #c4b5fd);
 }
 
 .modern-main {
@@ -390,8 +390,8 @@
 
 .creative-skills { display: flex; flex-wrap: wrap; gap: 4px; }
 .creative-skill {
-  background: #f3f0fe; /* fallback for color-mix */
-  color: #7c3aed;
+  background: var(--accent, #f3f0fe);
+  color: white;
   border-radius: 3px;
   padding: 2px 8px;
   font-size: 9.5px;
