@@ -10,7 +10,6 @@ import {
   Save, User, Briefcase, GraduationCap, FolderGit2, Wrench, FileText,
   Plus, Trash2, Check, Loader2
 } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
 
 const STEPS = [
   { id: 'personal',   label: 'Personal',   icon: User },
@@ -117,33 +116,23 @@ export default function Builder() {
 
   const handleDownload = async () => {
     try {
-      // Ensure preview is visible on mobile before capturing
-      if (window.innerWidth < 768 && panel === 'form') {
+      // Ensure preview is visible before printing (needed for capturing on mobile)
+      if (panel === 'form') {
         setPanel('preview');
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-
-      const el = document.getElementById('resume-preview-content');
-      if (!el) {
-        showToast('Error: Resume preview not found', 'error');
-        return;
+        // Small delay to let the panel render
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      showToast('Generating PDF...', 'success');
-      await html2pdf().set({
-        margin: 0,
-        filename: `${resume.title || 'resume'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      }).from(el).save();
+      showToast('Opening print dialog...', 'success');
       
-      showToast('📄 PDF downloaded!');
+      // We use native print. Our @media print styles in index.css handle the layout.
+      // This is much more reliable and better for SEO/ATS than canvas-based PDFs.
+      window.print();
+      
+      showToast('📄 Print/Save dialog opened!');
     } catch (err) {
-      console.error('PDF Generation Error:', err);
-      // Fallback to native print if html2pdf completely fails
-      showToast(`HTML2PDF Failed. Using basic print fallback.`, 'error');
-      setTimeout(() => window.print(), 1000);
+      console.error('Print Error:', err);
+      showToast('Failed to open print dialog.', 'error');
     }
   };
 
