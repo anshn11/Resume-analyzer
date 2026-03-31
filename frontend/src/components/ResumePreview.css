@@ -89,9 +89,9 @@
 }
 
 .skill-tag {
-  background: color-mix(in srgb, var(--accent, #7c3aed) 10%, white);
-  color: var(--accent, #7c3aed);
-  border: 1px solid color-mix(in srgb, var(--accent, #7c3aed) 25%, white);
+  background: #ede9fe; /* fallback for color-mix */
+  color: #7c3aed;
+  border: 1px solid #c4b5fd; /* fallback for color-mix */
   border-radius: 4px;
   padding: 2px 8px;
   font-size: 10px;
@@ -242,7 +242,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: color-mix(in srgb, var(--accent, #7c3aed) 20%, white);
+  background: #e0d7fa; /* fallback for color-mix */
 }
 
 /* ── Minimal Template ────────────────────────────── */
@@ -304,7 +304,7 @@
 }
 
 .creative-header {
-  background: linear-gradient(135deg, var(--accent, #7c3aed), color-mix(in srgb, var(--accent, #7c3aed) 60%, #000));
+  background: linear-gradient(135deg, #7c3aed, #3c1976); /* fallback for color-mix */
   color: white;
   padding: 24px 28px;
   display: flex;
@@ -361,7 +361,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding-bottom: 5px;
-  border-bottom: 1.5px solid color-mix(in srgb, var(--accent, #7c3aed) 25%, white);
+  border-bottom: 1.5px solid #c4b5fd; /* fallback for color-mix */
   margin-bottom: 10px;
 }
 
@@ -390,8 +390,8 @@
 
 .creative-skills { display: flex; flex-wrap: wrap; gap: 4px; }
 .creative-skill {
-  background: color-mix(in srgb, var(--accent, #7c3aed) 12%, white);
-  color: var(--accent, #7c3aed);
+  background: #f3f0fe; /* fallback for color-mix */
+  color: #7c3aed;
   border-radius: 3px;
   padding: 2px 8px;
   font-size: 9.5px;

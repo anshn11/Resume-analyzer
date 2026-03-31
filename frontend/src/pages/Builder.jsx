@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { useParams, Link } from 'react-router-dom';
 import { getResumeById, updateResume } from '../lib/storage';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +32,7 @@ const SECTION_TIPS = {
 };
 
 export default function Builder() {
+  const previewRef = useRef();
   const { id }       = useParams();
   const { user }     = useAuth();
   const [resume, setResume]       = useState(null);
@@ -43,9 +46,20 @@ export default function Builder() {
   const autoSaveRef = useRef(null);
 
   useEffect(() => {
+    setLoading(true);
     const r = getResumeById(id);
-    if (r) setResume(r);
-    else   setResume({ ...EMPTY_RESUME, id, title: 'My Resume', userId: user?.uid || 'local', createdAt: Date.now(), updatedAt: Date.now() });
+    if (r) {
+      setResume(r);
+    } else {
+      setResume({ 
+        ...EMPTY_RESUME, 
+        id, 
+        title: 'New Resume', 
+        userId: user?.uid || 'local', 
+        createdAt: Date.now(), 
+        updatedAt: Date.now() 
+      });
+    }
     setLoading(false);
   }, [id, user?.uid]);
 
@@ -116,23 +130,37 @@ export default function Builder() {
 
   const handleDownload = async () => {
     try {
-      // Ensure preview is visible before printing (needed for capturing on mobile)
-      if (panel === 'form') {
+      // Ensure preview is visible before capturing
+      if (panel !== 'preview') {
         setPanel('preview');
-        // Small delay to let the panel render
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for the panel to render and DOM to update
+        await new Promise(resolve => setTimeout(resolve, 700));
       }
-      
-      showToast('Opening print dialog...', 'success');
-      
-      // We use native print. Our @media print styles in index.css handle the layout.
-      // This is much more reliable and better for SEO/ATS than canvas-based PDFs.
-      window.print();
-      
-      showToast('📄 Print/Save dialog opened!');
+      const input = previewRef.current;
+      if (!input) {
+        console.error('Resume preview ref is null', { previewRef });
+        showToast('Resume preview not found. Try again.', 'error');
+        return;
+      }
+      if (!input.offsetWidth || !input.offsetHeight) {
+        console.error('Resume preview is not visible or has no size', { input });
+        showToast('Resume preview is not visible. Try again.', 'error');
+        return;
+      }
+      showToast('Generating PDF...', 'success');
+      const canvas = await html2canvas(input, { scale: 2, useCORS: true, backgroundColor: '#fff' });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      // Calculate image dimensions to fit A4
+      const imgWidth = pageWidth;
+      const imgHeight = canvas.height * (imgWidth / canvas.width);
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`${resume.title || 'resume'}.pdf`);
+      showToast('📄 PDF downloaded!');
     } catch (err) {
-      console.error('Print Error:', err);
-      showToast('Failed to open print dialog.', 'error');
+      console.error('PDF generation error:', err);
+      showToast('Failed to generate PDF. See console for details.', 'error');
     }
   };
 
@@ -166,7 +194,7 @@ export default function Builder() {
             <Save size={13} /> Save
           </button>
           <button className="btn-primary text-xs px-3.5 py-2 rounded-full" onClick={handleDownload}>
-            <Download size={13} /> Print
+            <Download size={13} /> Download PDF
           </button>
         </div>
       </header>
@@ -272,7 +300,7 @@ export default function Builder() {
               </button>
             ) : (
               <button className="btn-primary text-sm px-5 py-2.5 rounded-full" onClick={handleDownload}>
-                <Download size={15} /> Print Resume
+                <Download size={15} /> Download PDF
               </button>
             )}
           </div>
@@ -280,7 +308,7 @@ export default function Builder() {
 
         {/* Preview panel */}
         <div className={`flex-1 overflow-y-auto bg-slate-300 ${panel === 'preview' ? 'flex' : 'hidden md:flex'} flex-col items-center py-8 px-6`}>
-          <div className="w-full max-w-[794px] bg-white shadow-2xl shadow-black/20 rounded-sm">
+          <div className="w-full max-w-[794px] bg-white shadow-2xl shadow-black/20 rounded-sm" ref={previewRef} id="resume-pdf-preview">
             <ResumePreview resume={resume} />
           </div>
         </div>

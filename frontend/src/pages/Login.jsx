@@ -112,7 +112,6 @@ export default function Login() {
 
         {/* Setup badge */}
         <div className="mt-5 text-center">
-      
         </div>
       </div>
     </div>

@@ -10,12 +10,37 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Navbar />
         <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/builder/:id?" element={<Builder />} />
+          {/* Routes with Navbar */}
+          <Route
+            path="/"
+            element={
+              <>
+                <Navbar />
+                <Landing />
+              </>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <>
+                <Navbar />
+                <Login />
+              </>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <>
+                <Navbar />
+                <Dashboard />
+              </>
+            }
+          />
+          {/* Builder route without Navbar */}
+          <Route path="/builder/:id?" element={<Builder key={window.location.pathname} />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
