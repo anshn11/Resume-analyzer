@@ -13,6 +13,8 @@ export default function Navbar() {
   const dropRef                       = useRef(null);
   const isHome                        = location.pathname === '/';
 
+  if (location.pathname.startsWith('/builder')) return null;
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);

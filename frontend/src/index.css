@@ -44,3 +44,42 @@
     @apply text-transparent bg-clip-text bg-gradient-primary;
   }
 }
+
+@media print {
+  /* Hide the UI controls and panels */
+  header, 
+  .md\:hidden.flex.bg-white, /* mobile toggle */
+  .overflow-x-auto, /* step bar */
+  .w-full.md\:w-\[480px\] /* form panel */
+  {
+    display: none !important;
+  }
+  
+  /* Reset layout for the preview panel */
+  .flex-1.bg-slate-300 {
+    display: block !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  .max-w-\[794px\] {
+    max-width: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  body, html {
+    background: white !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Force background colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
