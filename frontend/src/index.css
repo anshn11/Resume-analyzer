@@ -43,6 +43,37 @@
   .gradient-text {
     @apply text-transparent bg-clip-text bg-gradient-primary;
   }
+
+  /* Resume Preview Mini-Components */
+  .resume-mini-preview {
+    @apply border-2 border-slate-200 rounded-xl overflow-hidden aspect-[3/4] group-hover:border-primary-400 group-hover:shadow-primary transition-all duration-300 bg-white relative;
+  }
+  .mini-line {
+    @apply bg-slate-100 rounded-full;
+  }
+  .status-badge {
+    @apply text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 shadow-sm border border-primary-200;
+  }
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-lg;
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .shadow-glow-lg {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3), 0 0 40px rgba(124, 58, 237, 0.1);
+  }
+  .bg-grid-slate-100 {
+    background-image: radial-gradient(circle, #f1f5f9 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
 }
 
 @media print {

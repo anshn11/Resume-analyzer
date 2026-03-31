@@ -199,28 +199,89 @@ export default function Landing() {
               4 professionally designed templates — each customizable with 10 accent colors.
             </p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {[
-              { name: 'Classic',  color: 'bg-primary-600', popular: false },
-              { name: 'Modern',   color: 'bg-slate-900',   popular: true },
-              { name: 'Minimal',  color: 'bg-white border-b-2 border-primary-600', popular: false },
-              { name: 'Creative', color: '',               popular: false, gradient: true },
-            ].map((t, i) => (
-              <div key={t.name} className="group cursor-pointer">
-                <div className="border-2 border-slate-200 rounded-xl overflow-hidden aspect-[3/4] group-hover:border-primary-400 group-hover:shadow-primary transition-all duration-200">
-                  <div className={`h-8 ${t.gradient ? 'bg-gradient-primary' : t.color}`} />
-                  <div className="bg-white p-3 flex flex-col gap-1.5 flex-1">
-                    <div className="h-2.5 w-2/3 bg-slate-700 rounded-full" />
-                    <div className="h-2 w-1/2 bg-primary-300 rounded-full" />
-                    <div className="h-2 w-full bg-slate-100 rounded-full" />
-                    <div className="h-2 w-4/5 bg-slate-100 rounded-full" />
-                    <div className="h-2 w-full bg-slate-100 rounded-full" />
-                    <div className="h-2 w-3/4 bg-slate-100 rounded-full" />
+              { 
+                name: 'Classic', 
+                popular: false,
+                render: () => (
+                  <div className="flex flex-col gap-2 p-4 pt-8">
+                    <div className="h-3 w-3/4 bg-slate-800 rounded-full mx-auto mb-2" />
+                    <div className="h-1.5 w-1/2 bg-primary-400 rounded-full mx-auto mb-4" />
+                    <div className="space-y-2">
+                      <div className="h-1.5 w-full mini-line" />
+                      <div className="h-1.5 w-full mini-line" />
+                      <div className="h-1.5 w-4/5 mini-line" />
+                    </div>
                   </div>
+                )
+              },
+              { 
+                name: 'Modern', 
+                popular: true,
+                render: () => (
+                  <div className="flex h-full">
+                    <div className="w-1/3 bg-slate-900 p-3 pt-6 space-y-3">
+                      <div className="w-8 h-8 rounded-full bg-white/20 mx-auto" />
+                      <div className="h-1 w-full bg-white/30 rounded-full" />
+                      <div className="h-1 w-2/3 bg-white/30 rounded-full" />
+                    </div>
+                    <div className="flex-1 p-3 pt-6 space-y-3">
+                      <div className="h-2 w-3/4 bg-slate-800 rounded-full" />
+                      <div className="h-1 w-full mini-line" />
+                      <div className="h-1 w-full mini-line" />
+                      <div className="h-1 w-full mini-line" />
+                    </div>
+                  </div>
+                )
+              },
+              { 
+                name: 'Minimal', 
+                popular: false,
+                render: () => (
+                  <div className="p-5 pt-10 space-y-4">
+                    <div className="h-4 w-1/2 bg-slate-800 rounded-sm" />
+                    <div className="space-y-2">
+                      <div className="h-1 w-full mini-line opacity-50" />
+                      <div className="h-1 w-full mini-line opacity-50" />
+                    </div>
+                    <div className="h-3 w-1/3 bg-slate-200 rounded-sm" />
+                    <div className="space-y-2">
+                      <div className="h-1 w-full mini-line opacity-50" />
+                    </div>
+                  </div>
+                )
+              },
+              { 
+                name: 'Creative', 
+                popular: false,
+                render: () => (
+                  <div className="h-full bg-white flex flex-col">
+                    <div className="h-1/3 bg-gradient-primary p-4 flex items-end">
+                      <div className="h-3 w-2/3 bg-white/90 rounded-full" />
+                    </div>
+                    <div className="flex-1 p-4 flex gap-3">
+                      <div className="flex-1 space-y-2">
+                        <div className="h-1.5 w-full mini-line" />
+                        <div className="h-1.5 w-full mini-line" />
+                        <div className="h-1.5 w-full mini-line" />
+                      </div>
+                      <div className="w-1/3 space-y-2">
+                        <div className="h-1.5 w-full bg-primary-50 rounded-full" />
+                        <div className="h-1.5 w-full bg-primary-50 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                )
+              },
+            ].map((t) => (
+              <div key={t.name} className="group cursor-pointer">
+                <div className="resume-mini-preview">
+                  {t.render()}
                 </div>
                 <div className="flex items-center justify-between px-1 pt-3">
-                  <span className="font-semibold text-sm">{t.name}</span>
-                  {t.popular && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-700">Popular</span>}
+                  <span className="font-bold text-sm text-slate-700">{t.name}</span>
+                  {t.popular && <span className="status-badge">Popular</span>}
                 </div>
               </div>
             ))}

@@ -150,12 +150,12 @@ export default function Builder() {
       showToast('Generating PDF...', 'success');
       const canvas = await html2canvas(input, { scale: 2, useCORS: true, backgroundColor: '#fff' });
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      // Calculate image dimensions to fit A4
-      const imgWidth = pageWidth;
-      const imgHeight = canvas.height * (imgWidth / canvas.width);
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      // Use the actual pixel size of the resume preview for the PDF
+      const pxToPt = 0.75; // 1px = 0.75pt
+      const pdfWidth = canvas.width * pxToPt;
+      const pdfHeight = canvas.height * pxToPt;
+      const pdf = new jsPDF({ orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait', unit: 'pt', format: [pdfWidth, pdfHeight] });
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${resume.title || 'resume'}.pdf`);
       showToast('📄 PDF downloaded!');
     } catch (err) {
