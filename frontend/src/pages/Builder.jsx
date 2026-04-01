@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useParams, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getResumeById, updateResume } from '../lib/storage';
 import { useAuth } from '../context/AuthContext';
 import { EMPTY_RESUME, EMPTY_EXPERIENCE, EMPTY_EDUCATION, EMPTY_PROJECT, ACCENT_COLORS, TEMPLATES, uid } from '../lib/utils';
@@ -166,7 +167,12 @@ export default function Builder() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center gap-4 text-slate-400">
-      <div className="spinner-dark scale-150" /> Loading resume…
+      <motion.div 
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full" 
+      />
+      Loading resume…
     </div>
   );
   if (!resume) return null;
@@ -190,12 +196,12 @@ export default function Builder() {
           {DEMO_MODE && (
             <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold border border-amber-200">Demo Mode</span>
           )}
-          <button className="btn-secondary text-xs px-3.5 py-2 rounded-full" onClick={doSave}>
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn-secondary text-xs px-3.5 py-2 rounded-full" onClick={doSave}>
             <Save size={13} /> Save
-          </button>
-          <button className="btn-primary text-xs px-3.5 py-2 rounded-full" onClick={handleDownload}>
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn-primary text-xs px-3.5 py-2 rounded-full" onClick={handleDownload}>
             <Download size={13} /> Download PDF
-          </button>
+          </motion.button>
         </div>
       </header>
 
@@ -204,9 +210,11 @@ export default function Builder() {
         {STEPS.map((s, i) => {
           const Icon = s.icon;
           return (
-            <button
+            <motion.button
               key={s.id}
               onClick={() => setStep(i)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer border ${
                 i === step
                   ? 'bg-primary-50 text-primary-700 border-primary-300'
@@ -217,7 +225,7 @@ export default function Builder() {
             >
               <Icon size={13} />
               {s.label}
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -270,23 +278,33 @@ export default function Builder() {
           </div>
 
           {/* Section content */}
-          <div className="px-5 py-6 flex-1">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="w-11 h-11 rounded-xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-600 flex-shrink-0">
-                <StepIcon size={18} />
-              </div>
-              <div>
-                <h2 className="text-lg font-extrabold mb-0.5" style={{ fontFamily: 'Outfit, sans-serif' }}>{STEPS[step].label}</h2>
-                <p className="text-xs text-slate-500 leading-relaxed">{SECTION_TIPS[STEPS[step].id]}</p>
-              </div>
-            </div>
+          <div className="px-5 py-6 flex-1 relative overflow-x-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={step}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-11 h-11 rounded-xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-600 flex-shrink-0">
+                    <StepIcon size={18} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-extrabold mb-0.5" style={{ fontFamily: 'Outfit, sans-serif' }}>{STEPS[step].label}</h2>
+                    <p className="text-xs text-slate-500 leading-relaxed">{SECTION_TIPS[STEPS[step].id]}</p>
+                  </div>
+                </div>
 
-            {STEPS[step].id === 'personal'   && <PersonalForm   resume={resume} update={update} />}
-            {STEPS[step].id === 'summary'    && <SummaryForm    resume={resume} update={update} onAi={handleAiSummary}        aiLoading={aiLoading} />}
-            {STEPS[step].id === 'experience' && <ExperienceForm resume={resume} update={update} onAi={handleAiExperience}     aiLoading={aiLoading} />}
-            {STEPS[step].id === 'education'  && <EducationForm  resume={resume} update={update} />}
-            {STEPS[step].id === 'projects'   && <ProjectsForm   resume={resume} update={update} />}
-            {STEPS[step].id === 'skills'     && <SkillsForm     resume={resume} update={update} onAi={handleAiSkills}         aiLoading={aiLoading} />}
+                {STEPS[step].id === 'personal'   && <PersonalForm   resume={resume} update={update} />}
+                {STEPS[step].id === 'summary'    && <SummaryForm    resume={resume} update={update} onAi={handleAiSummary}        aiLoading={aiLoading} />}
+                {STEPS[step].id === 'experience' && <ExperienceForm resume={resume} update={update} onAi={handleAiExperience}     aiLoading={aiLoading} />}
+                {STEPS[step].id === 'education'  && <EducationForm  resume={resume} update={update} />}
+                {STEPS[step].id === 'projects'   && <ProjectsForm   resume={resume} update={update} />}
+                {STEPS[step].id === 'skills'     && <SkillsForm     resume={resume} update={update} onAi={handleAiSkills}         aiLoading={aiLoading} />}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Prev / Next */}
@@ -315,11 +333,18 @@ export default function Builder() {
       </div>
 
       {/* Toast */}
-      {toast && (
-        <div className={`fixed bottom-6 right-6 px-5 py-3.5 rounded-2xl text-sm font-semibold shadow-xl animate-fade-in-up z-50 ${toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-gradient-primary text-white'}`}>
-          {toast.msg}
-        </div>
-      )}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={`fixed bottom-6 right-6 px-5 py-3.5 rounded-2xl text-sm font-semibold shadow-xl z-50 ${toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-gradient-primary text-white'}`}
+          >
+            {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

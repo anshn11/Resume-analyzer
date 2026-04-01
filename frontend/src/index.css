@@ -5,7 +5,14 @@
 @layer components {
   /* Buttons */
   .btn-primary {
-    @apply inline-flex items-center justify-center font-bold text-white bg-gradient-primary hover:shadow-primary transition-all duration-300;
+    @apply inline-flex items-center justify-center font-bold text-white transition-all duration-300 rounded-full;
+    padding: 0.85rem 2.25rem;
+    background-image: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
+    background-color: #7c3aed; /* fallback */
+    border: none !important;
+    outline: none;
+    border-radius: 9999px !important;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.15);
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all duration-200 border border-slate-200;
