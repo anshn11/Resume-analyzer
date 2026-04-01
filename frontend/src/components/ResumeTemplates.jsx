@@ -16,8 +16,8 @@ export function ClassicTemplate({ resume }) {
           {p.email    && <span>{p.email}</span>}
           {p.phone    && <span>{p.phone}</span>}
           {p.location && <span>{p.location}</span>}
-          {p.linkedin && <span>{p.linkedin}</span>}
-          {p.github   && <span>{p.github}</span>}
+          {p.linkedin && <a href={p.linkedin.startsWith('http') ? p.linkedin : `https://linkedin.com/in/${p.linkedin.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="resume-link">LinkedIn</a>}
+          {p.github   && <a href={p.github.startsWith('http') ? p.github : `https://github.com/${p.github.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="resume-link">GitHub</a>}
           {p.website  && <span>{p.website}</span>}
         </div>
       </div>
@@ -116,8 +116,8 @@ export function ModernTemplate({ resume }) {
           {p.email    && <div className="modern-contact-item">{p.email}</div>}
           {p.phone    && <div className="modern-contact-item">{p.phone}</div>}
           {p.location && <div className="modern-contact-item">{p.location}</div>}
-          {p.linkedin && <div className="modern-contact-item">{p.linkedin}</div>}
-          {p.github   && <div className="modern-contact-item">{p.github}</div>}
+          {p.linkedin && <div className="modern-contact-item"><a href={p.linkedin.startsWith('http') ? p.linkedin : `https://linkedin.com/in/${p.linkedin.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="resume-link">LinkedIn</a></div>}
+          {p.github   && <div className="modern-contact-item"><a href={p.github.startsWith('http') ? p.github : `https://github.com/${p.github.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="resume-link">GitHub</a></div>}
         </div>
         {skills.length > 0 && (
           <div className="modern-contact-section">
@@ -196,8 +196,8 @@ export function MinimalTemplate({ resume }) {
           {p.email    && <span>{p.email}</span>}
           {p.phone    && <span>{p.phone}</span>}
           {p.location && <span>{p.location}</span>}
-          {p.github   && <span>{p.github}</span>}
-          {p.linkedin && <span>{p.linkedin}</span>}
+          {p.github   && <a href={p.github.startsWith('http') ? p.github : `https://github.com/${p.github.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="resume-link">GitHub</a>}
+          {p.linkedin && <a href={p.linkedin.startsWith('http') ? p.linkedin : `https://linkedin.com/in/${p.linkedin.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="resume-link">LinkedIn</a>}
         </div>
       </div>
       <div className="minimal-accent-line" />
@@ -272,8 +272,8 @@ export function CreativeTemplate({ resume }) {
           {p.email    && <span>✉ {p.email}</span>}
           {p.phone    && <span>✆ {p.phone}</span>}
           {p.location && <span>⊙ {p.location}</span>}
-          {p.linkedin && <span>in {p.linkedin}</span>}
-          {p.github   && <span>⌥ {p.github}</span>}
+          {p.linkedin && <a href={p.linkedin.startsWith('http') ? p.linkedin : `https://linkedin.com/in/${p.linkedin.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="resume-link">LinkedIn</a>}
+          {p.github   && <a href={p.github.startsWith('http') ? p.github : `https://github.com/${p.github.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="resume-link">GitHub</a>}
         </div>
       </div>
       <div className="creative-body">
