@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getResumeById, updateResume } from '../lib/storage';
 import { useAuth } from '../context/AuthContext';
 import { EMPTY_RESUME, EMPTY_EXPERIENCE, EMPTY_EDUCATION, EMPTY_PROJECT, ACCENT_COLORS, TEMPLATES, uid } from '../lib/utils';
-import { enhanceSummary, enhanceExperience, suggestSkills, DEMO_MODE } from '../lib/gemini';
+import { enhanceSummary, enhanceExperience, suggestSkills, analyzeAtsScore, DEMO_MODE } from '../lib/gemini';
 import ResumePreview from '../components/ResumePreview';
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Sparkles, Download,
   Save, User, Briefcase, GraduationCap, FolderGit2, Wrench, FileText,
-  Plus, Trash2, Check, Loader2
+  Plus, Trash2, Check, Loader2, Target, BarChart3
 } from 'lucide-react';
 
 const STEPS = [
@@ -36,35 +36,81 @@ export default function Builder() {
   const previewRef = useRef();
   const { id }       = useParams();
   const { user }     = useAuth();
+  const navigate     = useNavigate();
   const [resume, setResume]       = useState(null);
   const [step, setStep]           = useState(0);
   const [saving, setSaving]       = useState(false);
   const [saved, setSaved]         = useState(false);
   const [loading, setLoading]     = useState(true);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [aiTask, setAiTask]       = useState(null);
   const [toast, setToast]         = useState(null);
   const [panel, setPanel]         = useState('form'); // 'form' | 'preview'
-  const autoSaveRef = useRef(null);
+  const autoSaveRef  = useRef(null);
+  const isSavingRef   = useRef(false); // True while a save is in-flight
+  const pendingSaveRef = useRef(false); // True if a change arrived during a save
+  const resumeRef     = useRef(resume); // Always points to the latest resume state
+
+  // Auth guard — redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
-    setLoading(true);
-    const r = getResumeById(id);
-    if (r) {
-      setResume(r);
-    } else {
-      setResume({ 
-        ...EMPTY_RESUME, 
-        id, 
-        title: 'New Resume', 
-        userId: user?.uid || 'local', 
-        createdAt: Date.now(), 
-        updatedAt: Date.now() 
-      });
-    }
-    setLoading(false);
+    if (!user) return; // Wait for auth before loading
+    let active = true;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const r = await getResumeById(id, user?.uid);
+        if (!active) return;
+        if (r) {
+          setResume(r);
+        } else {
+          // Resume not found in DB — treat as brand-new (just created)
+          setResume({ 
+            ...EMPTY_RESUME, 
+            id, 
+            title: 'New Resume', 
+            userId: user?.uid || 'local', 
+            createdAt: Date.now(), 
+            updatedAt: Date.now() 
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load resume', error);
+        if (!active) return;
+        // Session expired or not authenticated — redirect to login
+        if (error.message?.includes('Unauthorized') || error.message?.includes('401')) {
+          navigate('/login', { replace: true });
+          return;
+        }
+        // Other error (network etc.) — show a blank resume so user isn't blocked
+        setResume({ 
+          ...EMPTY_RESUME, 
+          id, 
+          title: 'New Resume', 
+          userId: user?.uid || 'local', 
+          createdAt: Date.now(), 
+          updatedAt: Date.now() 
+        });
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [id, user?.uid]);
 
+  // Keep resumeRef in sync so doSave always sends the latest data
+  useEffect(() => { resumeRef.current = resume; }, [resume]);
+
   // Auto-save after 1.5s of inactivity
+  // No isSavingRef check here — doSave handles concurrency internally
   useEffect(() => {
     if (!resume) return;
     clearTimeout(autoSaveRef.current);
@@ -73,13 +119,43 @@ export default function Builder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resume]);
 
-  const doSave = () => {
-    if (!resume) return;
+  const doSave = async () => {
+    if (!resumeRef.current) return;
+
+    // If already saving, mark a pending save and let the current one finish
+    if (isSavingRef.current) {
+      pendingSaveRef.current = true;
+      return;
+    }
+
+    isSavingRef.current  = true;
+    pendingSaveRef.current = false;
     setSaving(true);
-    updateResume(id, resume);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+    try {
+      // Always save the LATEST state via resumeRef (not the stale closure value)
+      await updateResume(id, resumeRef.current);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error('Failed to save resume', error);
+      // Session expired — redirect to login so user can re-authenticate
+      if (error.message?.includes('Unauthorized') || error.message?.includes('401')) {
+        showToast('Session expired. Please sign in again.', 'error');
+        setTimeout(() => navigate('/login', { replace: true }), 1500);
+        return;
+      }
+      showToast('Failed to save resume. Check your connection.', 'error');
+    } finally {
+      setSaving(false);
+      isSavingRef.current = false;
+
+      // If a change arrived while we were saving, save again now
+      if (pendingSaveRef.current) {
+        pendingSaveRef.current = false;
+        doSave();
+      }
+    }
   };
 
   const update = useCallback((path, value) => {
@@ -99,34 +175,56 @@ export default function Builder() {
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
 
   const handleAiSummary = async () => {
-    setAiLoading(true);
+    setAiTask('summary');
     try {
       const res = await enhanceSummary(resume.summary, resume.personalInfo?.jobTitle);
       update('summary', res);
       showToast(DEMO_MODE ? '✨ Demo AI enhancement applied!' : '✨ Summary enhanced by Gemini AI!');
     } catch { showToast('AI enhancement failed.', 'error'); }
-    finally   { setAiLoading(false); }
+    finally   { setAiTask(null); }
   };
 
   const handleAiExperience = async (idx) => {
     const exp = resume.experience[idx];
-    setAiLoading(true);
+    setAiTask(`experience-${idx}`);
     try {
       const res = await enhanceExperience(exp.description, exp.jobTitle, exp.company);
       update('experience', resume.experience.map((e, i) => i === idx ? { ...e, description: res } : e));
       showToast('✨ Experience enhanced!');
     } catch { showToast('AI failed.', 'error'); }
-    finally  { setAiLoading(false); }
+    finally  { setAiTask(null); }
   };
 
   const handleAiSkills = async () => {
-    setAiLoading(true);
+    setAiTask('skills');
     try {
       const suggestions = await suggestSkills(resume.personalInfo?.jobTitle, resume.skills);
       update('skills', [...new Set([...resume.skills, ...suggestions])]);
       showToast(`✨ Added ${suggestions.length} AI-suggested skills!`);
     } catch { showToast('AI failed.', 'error'); }
-    finally  { setAiLoading(false); }
+    finally  { setAiTask(null); }
+  };
+
+  const handleAtsAnalysis = async () => {
+    if (!resume.atsTarget?.trim()) {
+      showToast('Paste a job description to generate an ATS score.', 'error');
+      return;
+    }
+
+    setAiTask('ats');
+    try {
+      const analysis = await analyzeAtsScore(resume, resume.atsTarget.trim());
+      update('atsAnalysis', {
+        ...analysis,
+        generatedAt: Date.now(),
+        jobDescription: resume.atsTarget.trim(),
+      });
+      showToast('ATS score generated!');
+    } catch {
+      showToast('ATS analysis failed.', 'error');
+    } finally {
+      setAiTask(null);
+    }
   };
 
   const handleDownload = async () => {
@@ -180,33 +278,33 @@ export default function Builder() {
   const StepIcon = STEPS[step].icon;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-50">
+    <div className="builder-shell min-h-screen md:h-screen flex flex-col overflow-hidden">
       {/* ── Builder Header ─────────────────────── */}
-      <header className="flex items-center gap-4 px-5 h-14 bg-white border-b border-slate-200 flex-shrink-0 z-20">
+      <header className="builder-topbar flex flex-wrap md:flex-nowrap items-center gap-3 px-4 md:px-5 py-3 md:py-0 md:h-16 flex-shrink-0 z-20">
         <Link to="/dashboard" className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-primary-600 transition-colors no-underline flex-shrink-0">
           <ArrowLeft size={15} /> Dashboard
         </Link>
-        <div className="flex-1 flex items-center justify-center gap-3 min-w-0">
-          <span className="font-bold text-sm truncate max-w-xs">{resume.title}</span>
+        <div className="flex-1 min-w-0 flex items-center md:justify-center gap-3">
+          <span className="font-bold text-sm md:text-base truncate max-w-[16rem] md:max-w-xs">{resume.title}</span>
           <span className="flex items-center gap-1 text-xs text-slate-400">
             {saving ? <><Loader2 size={12} className="animate-spin" /> Saving…</> : saved ? <><Check size={12} className="text-emerald-500" /> Saved</> : null}
           </span>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0 w-full md:w-auto">
           {DEMO_MODE && (
             <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold border border-amber-200">Demo Mode</span>
           )}
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn-secondary text-xs px-3.5 py-2 rounded-full" onClick={doSave}>
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn-secondary text-xs px-3.5 py-2 rounded-full flex-1 md:flex-none" onClick={doSave}>
             <Save size={13} /> Save
           </motion.button>
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn-primary text-xs px-3.5 py-2 rounded-full" onClick={handleDownload}>
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn-primary text-xs px-3.5 py-2 rounded-full flex-1 md:flex-none" onClick={handleDownload}>
             <Download size={13} /> Download PDF
           </motion.button>
         </div>
       </header>
 
       {/* ── Step bar ───────────────────────────── */}
-      <div className="flex items-center gap-1 px-4 py-2.5 bg-white border-b border-slate-200 overflow-x-auto flex-shrink-0 scrollbar-hide">
+      <div className="builder-stepbar flex items-center gap-1 px-3 md:px-4 py-2.5 overflow-x-auto flex-shrink-0 scrollbar-hide">
         {STEPS.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -231,7 +329,7 @@ export default function Builder() {
       </div>
 
       {/* ── Mobile panel toggle ─────────────────── */}
-      <div className="md:hidden flex bg-white border-b border-slate-200 p-2 gap-2 flex-shrink-0">
+      <div className="md:hidden flex bg-white/90 border-b border-slate-200 p-2 gap-2 flex-shrink-0 backdrop-blur-sm">
         {['form', 'preview'].map(p => (
           <button key={p} onClick={() => setPanel(p)}
             className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all duration-150 cursor-pointer ${panel === p ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500'}`}
@@ -242,11 +340,11 @@ export default function Builder() {
       </div>
 
       {/* ── Main body ──────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Form panel */}
-        <div className={`w-full md:w-[480px] md:flex-shrink-0 flex flex-col bg-white border-r border-slate-200 overflow-y-auto ${panel === 'form' ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`w-full md:w-[520px] xl:w-[560px] md:flex-shrink-0 flex flex-col bg-white/92 border-r border-slate-200 overflow-y-auto backdrop-blur-sm ${panel === 'form' ? 'flex' : 'hidden md:flex'}`}>
           {/* Template & color */}
-          <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 space-y-3">
+          <div className="px-4 md:px-5 py-4 border-b border-slate-100 bg-white/75 backdrop-blur-sm space-y-4">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Template</div>
               <div className="flex flex-wrap gap-2">
@@ -278,7 +376,7 @@ export default function Builder() {
           </div>
 
           {/* Section content */}
-          <div className="px-5 py-6 flex-1 relative overflow-x-hidden">
+          <div className="px-4 md:px-5 py-5 md:py-6 flex-1 relative overflow-x-hidden">
             <AnimatePresence mode="wait">
               <motion.div 
                 key={step}
@@ -287,8 +385,8 @@ export default function Builder() {
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-11 h-11 rounded-xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-600 flex-shrink-0">
+                <div className="builder-section-intro flex items-start gap-4 mb-6">
+                  <div className="w-11 h-11 rounded-2xl bg-primary-50 border border-primary-200 flex items-center justify-center text-primary-600 flex-shrink-0 shadow-sm">
                     <StepIcon size={18} />
                   </div>
                   <div>
@@ -298,17 +396,17 @@ export default function Builder() {
                 </div>
 
                 {STEPS[step].id === 'personal'   && <PersonalForm   resume={resume} update={update} />}
-                {STEPS[step].id === 'summary'    && <SummaryForm    resume={resume} update={update} onAi={handleAiSummary}        aiLoading={aiLoading} />}
-                {STEPS[step].id === 'experience' && <ExperienceForm resume={resume} update={update} onAi={handleAiExperience}     aiLoading={aiLoading} />}
+                {STEPS[step].id === 'summary'    && <SummaryForm    resume={resume} update={update} onAi={handleAiSummary}        aiLoading={aiTask === 'summary'} />}
+                {STEPS[step].id === 'experience' && <ExperienceForm resume={resume} update={update} onAi={handleAiExperience}     aiTask={aiTask} />}
                 {STEPS[step].id === 'education'  && <EducationForm  resume={resume} update={update} />}
                 {STEPS[step].id === 'projects'   && <ProjectsForm   resume={resume} update={update} />}
-                {STEPS[step].id === 'skills'     && <SkillsForm     resume={resume} update={update} onAi={handleAiSkills}         aiLoading={aiLoading} />}
+                {STEPS[step].id === 'skills'     && <SkillsForm     resume={resume} update={update} onAi={handleAiSkills}         aiLoading={aiTask === 'skills'} />}
               </motion.div>
             </AnimatePresence>
           </div>
 
           {/* Prev / Next */}
-          <div className="flex justify-between items-center px-5 py-4 border-t border-slate-100 bg-white flex-shrink-0">
+          <div className="flex justify-between items-center gap-3 px-4 md:px-5 py-4 border-t border-slate-100 bg-white/90 flex-shrink-0 backdrop-blur-sm">
             <button className="btn-secondary text-sm px-5 py-2.5 rounded-full disabled:opacity-40 disabled:cursor-not-allowed" onClick={() => setStep(p => Math.max(0, p - 1))} disabled={step === 0}>
               <ChevronLeft size={15} /> Previous
             </button>
@@ -325,8 +423,14 @@ export default function Builder() {
         </div>
 
         {/* Preview panel */}
-        <div className={`flex-1 overflow-y-auto bg-slate-300 ${panel === 'preview' ? 'flex' : 'hidden md:flex'} flex-col items-center py-8 px-6`}>
-          <div className="w-full max-w-[794px] bg-white shadow-2xl shadow-black/20 rounded-sm" ref={previewRef} id="resume-pdf-preview">
+        <div className={`builder-preview-panel flex-1 overflow-y-auto ${panel === 'preview' ? 'flex' : 'hidden md:flex'} flex-col items-center py-5 md:py-8 px-4 md:px-6 gap-6`}>
+          <ATSPanel
+            resume={resume}
+            update={update}
+            onAnalyze={handleAtsAnalysis}
+            aiLoading={aiTask === 'ats'}
+          />
+          <div className="builder-preview-frame w-full max-w-[794px]" ref={previewRef} id="resume-pdf-preview">
             <ResumePreview resume={resume} />
           </div>
         </div>
@@ -352,7 +456,7 @@ export default function Builder() {
 /* ══ Section Forms ════════════════════════════════════ */
 
 function FormGrid({ children }) {
-  return <div className="grid grid-cols-2 gap-4">{children}</div>;
+  return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>;
 }
 
 function FG({ label, full, children }) {
@@ -396,7 +500,7 @@ function SummaryForm({ resume, update, onAi, aiLoading }) {
   );
 }
 
-function ExperienceForm({ resume, update, onAi, aiLoading }) {
+function ExperienceForm({ resume, update, onAi, aiTask }) {
   const exps = resume.experience || [];
   const add  = () => update('experience', [...exps, { ...EMPTY_EXPERIENCE, id: uid() }]);
   const rm   = (i) => update('experience', exps.filter((_,j)=>j!==i));
@@ -406,11 +510,11 @@ function ExperienceForm({ resume, update, onAi, aiLoading }) {
     <div className="space-y-3">
       {exps.length === 0 && <EmptySection icon={Briefcase} label="No experience added yet" onAdd={add} addLabel="Add Experience" />}
       {exps.map((exp,i)=>(
-        <div key={exp.id||i} className="border border-slate-200 rounded-xl p-4 focus-within:border-primary-300 transition-colors space-y-3">
+        <div key={exp.id||i} className="builder-card border border-slate-200 rounded-2xl p-4 focus-within:border-primary-300 transition-colors space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-primary-600 text-white text-[10px] font-bold flex items-center justify-center">{i+1}</span><span className="font-semibold text-sm truncate">{exp.jobTitle||exp.company||'Experience'}</span></div>
             <div className="flex gap-2">
-              <button className="ai-btn" onClick={()=>onAi(i)} disabled={aiLoading}>{aiLoading?<><Loader2 size={11} className="animate-spin"/>Writing…</>:<><Sparkles size={11}/>AI</>}</button>
+              <button className="ai-btn" onClick={()=>onAi(i)} disabled={Boolean(aiTask)}>{aiTask===`experience-${i}`?<><Loader2 size={11} className="animate-spin"/>Writing…</>:<><Sparkles size={11}/>AI</>}</button>
               <button className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer" onClick={()=>rm(i)}><Trash2 size={13}/></button>
             </div>
           </div>
@@ -440,7 +544,7 @@ function EducationForm({ resume, update }) {
     <div className="space-y-3">
       {edus.length === 0 && <EmptySection icon={GraduationCap} label="No education added yet" onAdd={add} addLabel="Add Education" />}
       {edus.map((edu,i)=>(
-        <div key={edu.id||i} className="border border-slate-200 rounded-xl p-4 focus-within:border-primary-300 transition-colors space-y-3">
+        <div key={edu.id||i} className="builder-card border border-slate-200 rounded-2xl p-4 focus-within:border-primary-300 transition-colors space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-primary-600 text-white text-[10px] font-bold flex items-center justify-center">{i+1}</span><span className="font-semibold text-sm">{edu.degree||edu.institution||'Education'}</span></div>
             <button className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer" onClick={()=>rm(i)}><Trash2 size={13}/></button>
@@ -470,7 +574,7 @@ function ProjectsForm({ resume, update }) {
     <div className="space-y-3">
       {projs.length === 0 && <EmptySection icon={FolderGit2} label="No projects added yet" onAdd={add} addLabel="Add Project" />}
       {projs.map((proj,i)=>(
-        <div key={proj.id||i} className="border border-slate-200 rounded-xl p-4 focus-within:border-primary-300 transition-colors space-y-3">
+        <div key={proj.id||i} className="builder-card border border-slate-200 rounded-2xl p-4 focus-within:border-primary-300 transition-colors space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-primary-600 text-white text-[10px] font-bold flex items-center justify-center">{i+1}</span><span className="font-semibold text-sm">{proj.name||'Project'}</span></div>
             <button className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer" onClick={()=>rm(i)}><Trash2 size={13}/></button>
@@ -521,6 +625,118 @@ function SkillsForm({ resume, update, onAi, aiLoading }) {
         {skills.length===0 && <p className="text-xs text-slate-400">Add skills above or click AI Suggest.</p>}
       </div>
       <p className="text-xs text-slate-400">💡 Add 8–12 skills including both technical and soft skills.</p>
+    </div>
+  );
+}
+
+function ATSPanel({ resume, update, onAnalyze, aiLoading }) {
+  const analysis = resume.atsAnalysis;
+  const isStale = analysis?.jobDescription && analysis.jobDescription !== (resume.atsTarget || '').trim();
+  const score = analysis?.score ?? null;
+  const scoreTone =
+    score == null ? 'bg-slate-100 text-slate-500 border-slate-200'
+    : score >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    : score >= 65 ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : 'bg-red-50 text-red-700 border-red-200';
+
+  return (
+    <div className="w-full max-w-[794px] bg-white/96 border border-slate-200 rounded-[2rem] shadow-xl shadow-slate-900/5 overflow-hidden backdrop-blur-sm">
+      <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[11px] font-bold uppercase tracking-[0.22em] mb-3">
+              <Target size={13} /> ATS Optimizer
+            </div>
+            <h3 className="text-2xl font-black mb-1" style={{ fontFamily: 'Outfit, sans-serif' }}>Generate your ATS score</h3>
+            <p className="text-sm text-slate-300 max-w-2xl">Paste a job description to compare this resume against the target role and uncover the quickest ATS wins.</p>
+          </div>
+          <div className={`min-w-[110px] px-4 py-3 rounded-2xl border text-center ${scoreTone}`}>
+            <div className="text-[11px] font-bold uppercase tracking-[0.22em] mb-1">ATS Score</div>
+            <div className="text-3xl font-black leading-none">{score ?? '--'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-5">
+        <div className="space-y-2">
+          <label className="form-label">Target Job Description</label>
+          <textarea
+            className="form-input min-h-[160px]"
+            placeholder="Paste the job description here to generate an ATS match score..."
+            value={resume.atsTarget || ''}
+            onChange={(e) => update('atsTarget', e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button className="btn-primary rounded-xl px-5 py-3 text-sm" onClick={onAnalyze} disabled={aiLoading}>
+            {aiLoading ? <><Loader2 size={15} className="animate-spin" /> Analyzing…</> : <><BarChart3 size={15} /> Generate ATS Score</>}
+          </button>
+          {analysis?.generatedAt && (
+            <span className="text-xs text-slate-500">
+              Last analyzed {new Date(analysis.generatedAt).toLocaleString()}
+            </span>
+          )}
+          {isStale && (
+            <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+              Job description changed. Re-run analysis to refresh the score.
+            </span>
+          )}
+        </div>
+
+        {analysis && (
+          <div className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {Object.entries(analysis.sectionScores || {}).map(([key, value]) => (
+                <div key={key} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-2">
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 leading-none">{value}</div>
+                </div>
+              ))}
+            </div>
+
+            {analysis.summary && (
+              <div className="rounded-2xl border border-slate-200 px-4 py-4">
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-2">Overview</div>
+                <p className="text-sm text-slate-600 leading-6">{analysis.summary}</p>
+              </div>
+            )}
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <InsightList title="Matched Keywords" items={analysis.matchedKeywords} tone="emerald" emptyLabel="No strong keyword matches yet." />
+              <InsightList title="Missing Keywords" items={analysis.missingKeywords} tone="amber" emptyLabel="No major keyword gaps detected." />
+              <InsightList title="Strengths" items={analysis.strengths} tone="blue" emptyLabel="No strengths returned." />
+              <InsightList title="Improvements" items={analysis.improvements} tone="rose" emptyLabel="No improvement suggestions returned." />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InsightList({ title, items = [], tone, emptyLabel }) {
+  const tones = {
+    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+    amber: 'bg-amber-50 border-amber-200 text-amber-800',
+    blue: 'bg-blue-50 border-blue-200 text-blue-800',
+    rose: 'bg-rose-50 border-rose-200 text-rose-800',
+  };
+
+  return (
+    <div className="rounded-2xl border border-slate-200 p-4">
+      <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">{title}</div>
+      <div className="flex flex-wrap gap-2">
+        {items.length > 0 ? items.map((item) => (
+          <span key={`${title}-${item}`} className={`px-3 py-1.5 rounded-full border text-xs font-semibold ${tones[tone]}`}>
+            {item}
+          </span>
+        )) : (
+          <p className="text-sm text-slate-500">{emptyLabel}</p>
+        )}
+      </div>
     </div>
   );
 }

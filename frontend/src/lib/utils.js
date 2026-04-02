@@ -22,9 +22,13 @@ export const TEMPLATES = [
 
 export const EMPTY_RESUME = {
   title: 'My Resume',
+  sourceType: 'builder',
   template: 'classic',
   accentColor: '#7c3aed',
   isPublic: false,
+  atsTarget: '',
+  atsAnalysis: null,
+  rawText: '',
   personalInfo: {
     fullName: '',
     email: '',

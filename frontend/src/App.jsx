@@ -6,6 +6,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Builder from "./pages/Builder";
+import UploadedResumeReview from "./pages/UploadedResumeReview";
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -54,6 +55,7 @@ function AnimatedRoutes() {
         />
         {/* Builder route without Navbar */}
         <Route path="/builder/:id?" element={<Builder key={location.pathname} />} />
+        <Route path="/uploaded-review/:id" element={<UploadedResumeReview key={location.pathname} />} />
       </Routes>
     </AnimatePresence>
   );

@@ -1,7 +1,7 @@
 // Google Gemini AI Helper
 // Get your free API key at: https://aistudio.google.com/app/apikey
 
-const DEMO_MODE = false; // Set to true for demo fallback only
+export const DEMO_MODE = false; // Set to true for demo fallback only
 
 /** Enhance professional summary using AI */
 export async function enhanceSummary(currentSummary, jobTitle) {
@@ -61,8 +61,59 @@ export async function suggestSkills(jobTitle, existingSkills) {
   return data.result;
 }
 
+/** Evaluate ATS score against a target job description */
+export async function analyzeAtsScore(resumeInput, jobDescription) {
+  if (DEMO_MODE) {
+    await sleep(1500);
+    const resume = resumeInput?.resumeText ? null : resumeInput;
+    const normalizedSkills = resume?.skills || [];
+    const textLengthScore = resumeInput?.resumeText ? Math.min(22, Math.round(resumeInput.resumeText.length / 180)) : 0;
+    const score = Math.min(
+      94,
+      45 +
+        normalizedSkills.length * 3 +
+        (resume?.experience?.filter((item) => item.description?.trim()).length || 0) * 6 +
+        (resume?.summary?.trim() ? 10 : 0) +
+        textLengthScore
+    );
+
+    return {
+      score,
+      summary:
+        'Your resume already has a solid structure for ATS parsing. The biggest opportunity is aligning more of your phrasing and keywords to the exact job description.',
+      matchedKeywords: normalizedSkills.slice(0, 8),
+      missingKeywords: ['Leadership', 'Stakeholder Management', 'CI/CD', 'System Design']
+        .filter((skill) => !normalizedSkills.includes(skill))
+        .slice(0, 6),
+      strengths: [
+        'Clear section structure supports ATS readability.',
+        'Skills and experience sections contain role-relevant terminology.',
+        'The resume includes multiple technical keywords that improve discoverability.'
+      ],
+      improvements: [
+        'Mirror more exact keywords from the target job description in the summary.',
+        'Add measurable outcomes to more experience bullets.',
+        'Include any missing tools, domain terms, or responsibilities from the posting when they are accurate.'
+      ],
+      sectionScores: {
+        contactInfo: resumeInput?.resumeText ? 80 : resume?.personalInfo?.email && resume?.personalInfo?.fullName ? 92 : 70,
+        summary: resumeInput?.resumeText ? 76 : resume?.summary?.trim() ? 84 : 58,
+        experience: resumeInput?.resumeText ? 78 : resume?.experience?.length ? 80 : 52,
+        skills: resumeInput?.resumeText ? 74 : normalizedSkills.length >= 6 ? 88 : 61,
+        formatting: 90
+      }
+    };
+  }
+
+  const res = await fetch('/api/ai/ats-score', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resume: resumeInput, jobDescription })
+  });
+  if (!res.ok) throw new Error('AI backend error');
+  return res.json();
+}
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-export { DEMO_MODE };

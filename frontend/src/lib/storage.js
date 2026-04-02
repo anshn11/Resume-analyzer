@@ -1,54 +1,134 @@
-/** LocalStorage persistence — resume data CRUD */
+/** Backend persistence for account-based resume storage */
 import { uid } from './utils';
 
 const RESUMES_KEY = 'nextoffer_resumes';
-const OLD_KEY     = 'resumeai_resumes';
+const OLD_KEY = 'resumeai_resumes';
+const IMPORT_FLAG_PREFIX = 'nextoffer_resumes_imported_';
 
-// ── Migration Bridge ───────────────────────────────────
-// One-time check to move data from the old brand key
-(function migrate() {
+function readLocalResumes() {
   try {
-    const oldData = localStorage.getItem(OLD_KEY);
-    const newData = localStorage.getItem(RESUMES_KEY);
-    if (oldData && !newData) {
-      localStorage.setItem(RESUMES_KEY, oldData);
-    }
-  } catch (e) {
-    console.error('Migration failed', e);
+    const current = JSON.parse(localStorage.getItem(RESUMES_KEY) || 'null');
+    if (Array.isArray(current)) return current;
+
+    const legacy = JSON.parse(localStorage.getItem(OLD_KEY) || 'null');
+    return Array.isArray(legacy) ? legacy : [];
+  } catch {
+    return [];
   }
-})();
-
-// ── Resume CRUD ─────────────────────────────────────────
-export function getResumes() {
-  try { return JSON.parse(localStorage.getItem(RESUMES_KEY)) || []; }
-  catch { return []; }
 }
 
-export function saveResumes(resumes) {
-  localStorage.setItem(RESUMES_KEY, JSON.stringify(resumes));
+function clearLegacyLocalResumes() {
+  try {
+    localStorage.removeItem(RESUMES_KEY);
+    localStorage.removeItem(OLD_KEY);
+  } catch {
+    // Ignore local cleanup errors
+  }
 }
 
-export function getResumeById(id) {
-  return getResumes().find(r => r.id === id) || null;
+async function api(path, options = {}) {
+  const res = await fetch(`/api/resumes${path}`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload.error || 'Resume request failed');
+  }
+
+  return res.json();
 }
 
-export function createResume(data) {
-  const resumes = getResumes();
-  const newResume = { ...data, id: uid(), createdAt: Date.now(), updatedAt: Date.now() };
-  resumes.unshift(newResume);
-  saveResumes(resumes);
-  return newResume;
+// Like api() but returns null on 404 instead of throwing (used by getResumeById)
+async function apiOrNull(path, options = {}) {
+  const res = await fetch(`/api/resumes${path}`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+
+  if (res.status === 404) return null;
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload.error || 'Resume request failed');
+  }
+
+  return res.json();
 }
 
-export function updateResume(id, data) {
-  const resumes = getResumes();
-  const idx = resumes.findIndex(r => r.id === id);
-  if (idx < 0) return false;
-  resumes[idx] = { ...resumes[idx], ...data, updatedAt: Date.now() };
-  saveResumes(resumes);
-  return resumes[idx];
+export async function maybeImportLocalResumes(userId) {
+  if (!userId) return;
+
+  const importFlag = `${IMPORT_FLAG_PREFIX}${userId}`;
+  try {
+    if (localStorage.getItem(importFlag) === 'done') return;
+  } catch {
+    // Ignore local flag issues
+  }
+
+  const localResumes = readLocalResumes();
+  if (!localResumes.length) {
+    try {
+      localStorage.setItem(importFlag, 'done');
+    } catch {
+      // Ignore local flag issues
+    }
+    return;
+  }
+
+  await api('/import', {
+    method: 'POST',
+    body: JSON.stringify({ resumes: localResumes }),
+  });
+
+  clearLegacyLocalResumes();
+  try {
+    localStorage.setItem(importFlag, 'done');
+  } catch {
+    // Ignore local flag issues
+  }
 }
 
-export function deleteResume(id) {
-  saveResumes(getResumes().filter(r => r.id !== id));
+export async function getResumes(userId) {
+  await maybeImportLocalResumes(userId);
+  const data = await api('/');
+  return data.resumes || [];
+}
+
+export async function getResumeById(id, _userId) {
+  // NOTE: We intentionally do NOT call maybeImportLocalResumes here.
+  // Import only runs once from getResumes() (the Dashboard entry point).
+  // Calling it here caused it to fire on every Builder load/re-render.
+  const data = await apiOrNull(`/${id}`);
+  return data?.resume || null;
+}
+
+export async function createResume(data) {
+  const payload = {
+    ...data,
+    id: data.id || uid(),
+    createdAt: data.createdAt || Date.now(),
+    updatedAt: Date.now(),
+  };
+  const result = await api('/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return result.resume;
+}
+
+export async function updateResume(id, data) {
+  const result = await api(`/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return result.resume;
+}
+
+export async function deleteResume(id) {
+  await api(`/${id}`, { method: 'DELETE' });
+  return true;
 }

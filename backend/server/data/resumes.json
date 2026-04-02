@@ -1,0 +1,239 @@
+{
+  "users": {
+    "108145474553490922356": [
+      {
+        "title": "hello",
+        "sourceType": "builder",
+        "template": "classic",
+        "accentColor": "#7c3aed",
+        "isPublic": false,
+        "atsTarget": "",
+        "atsAnalysis": null,
+        "rawText": "",
+        "personalInfo": {
+          "fullName": "",
+          "email": "",
+          "phone": "",
+          "location": "",
+          "website": "",
+          "linkedin": "",
+          "github": "",
+          "jobTitle": ""
+        },
+        "summary": "",
+        "experience": [],
+        "education": [],
+        "projects": [],
+        "skills": [],
+        "userId": "108145474553490922356",
+        "id": "ye2y3xcmngl6a46",
+        "createdAt": 1775080627638,
+        "updatedAt": 1775080627653
+      },
+      {
+        "title": "hello",
+        "sourceType": "builder",
+        "template": "classic",
+        "accentColor": "#7c3aed",
+        "isPublic": false,
+        "atsTarget": "",
+        "atsAnalysis": null,
+        "rawText": "",
+        "personalInfo": {
+          "fullName": "ANSH NARAYAN CHATURVEDI",
+          "email": "vineetachaturvedi11@gmail.com",
+          "phone": "+919044570726",
+          "location": "",
+          "website": "",
+          "linkedin": "",
+          "github": "",
+          "jobTitle": "Full stack"
+        },
+        "summary": "Highly skilled Full Stack Developer proficient in designing, developing, and deploying robust web applications. Expertise spans modern frontend frameworks, powerful backend technologies, and efficient database management. Adept at leveraging DevOps practices to streamline CI/CD pipelines and ensure seamless deployment, delivering end-to-end solutions.",
+        "experience": [
+          {
+            "id": "2yhcbpomngh0gxj",
+            "jobTitle": "SDE",
+            "company": "Microsoft",
+            "location": "Delhi",
+            "startDate": "2026-01",
+            "endDate": "",
+            "current": true,
+            "description": "• Led the end-to-end design and implementation of a critical new backend service using C#, .NET Core, and Azure Functions, improving system reliability by 25% and processing over 5 million daily requests.\n• Optimized a high-traffic data processing pipeline, reducing latency by 30% and decreasing operational costs by 15% through algorithmic enhancements and efficient resource allocation, impacting 100,000+ daily active users.\n• Championed and integrated robust unit and integration testing frameworks, decreasing production bug incidence by 20% across the team's services and enhancing code maintainability for future development cycles.\n• Developed and deployed automated CI/CD pipelines using Azure DevOps, streamlining the release process to increase deployment frequency by 50% and reduce manual effort by 10 hours per week for the engineering team."
+          }
+        ],
+        "education": [],
+        "projects": [],
+        "skills": [],
+        "userId": "108145474553490922356",
+        "id": "xds42e9mnggxwbv",
+        "createdAt": 1775073518059,
+        "updatedAt": 1775078782519
+      },
+      {
+        "title": "hello",
+        "template": "classic",
+        "accentColor": "#7c3aed",
+        "isPublic": false,
+        "personalInfo": {
+          "fullName": "ANSH NARAYAN CHATURVEDI",
+          "email": "vineetachaturvedi11@gmail.com",
+          "phone": "+919044570726",
+          "location": "",
+          "website": "",
+          "linkedin": "linked.in",
+          "github": "github.com?userna",
+          "jobTitle": "Full Stack Developer"
+        },
+        "summary": "Full stack developer knows frontend backend database AI/ML and dev ops",
+        "experience": [],
+        "education": [],
+        "projects": [],
+        "skills": [],
+        "userId": "108145474553490922356",
+        "id": "lpk90jumng0t9vr",
+        "createdAt": 1775046428487,
+        "updatedAt": 1775080147064
+      },
+      {
+        "title": "hello",
+        "template": "classic",
+        "accentColor": "#dc2626",
+        "isPublic": false,
+        "personalInfo": {
+          "fullName": "ANSH NARAYAN CHATURVEDI",
+          "email": "vineetachaturvedi11@gmail.com",
+          "phone": "+919044570726",
+          "location": "New Delhi",
+          "website": "yoursite.com",
+          "linkedin": "linkedin.com",
+          "github": "github",
+          "jobTitle": "Full Stack Developer"
+        },
+        "summary": "Highly skilled Full Stack Developer with a strong background in designing, developing, and deploying robust web applications. Proficient across the full software development lifecycle, leveraging expertise in modern frontend frameworks like React and backend technologies such as Node.js, alongside SQL/NoSQL databases. Proven ability to deliver scalable, high-performance solutions that enhance user experience and drive business objectives. A collaborative team player committed to technical excellence and continuous innovation.",
+        "experience": [
+          {
+            "id": "9sumfqvmng0f62v",
+            "jobTitle": "Dev ops Engineer",
+            "company": "Microsoft Azure",
+            "location": "Hyderabad",
+            "startDate": "2026-01",
+            "endDate": "",
+            "current": true,
+            "description": "• Engineered and maintained highly available CI/CD pipelines using Azure DevOps and YAML for **15+** critical microservices, automating deployment processes and reducing release cycles by **35%**.\n• Designed, implemented, and managed scalable cloud infrastructure across multiple Azure subscriptions using Terraform and ARM templates, achieving **99.99%** uptime for core production environments.\n• Developed and implemented robust monitoring, alerting, and logging solutions with Azure Monitor, Application Insights, and Grafana, decreasing Mean Time To Resolution (MTTR) by **20%** for high-priority incidents.\n• Executed cost optimization strategies, including resource right-sizing and auto-scaling across **50+** Azure resources, realizing an **18%** reduction in monthly cloud spend while enhancing performance for high-traffic applications."
+          }
+        ],
+        "education": [
+          {
+            "id": "y8bg4h5mng0heqj",
+            "degree": "B.Tech CSE",
+            "institution": "IIT Delhi",
+            "location": "New Delhi",
+            "startDate": "2025-02",
+            "endDate": "2026-11",
+            "gpa": "8.5/10",
+            "description": ""
+          }
+        ],
+        "projects": [
+          {
+            "id": "zodxdxvmng0iqn4",
+            "name": "",
+            "description": "",
+            "technologies": "",
+            "link": "",
+            "github": ""
+          }
+        ],
+        "skills": [],
+        "userId": "108145474553490922356",
+        "id": "46fycmmmng0de32",
+        "createdAt": 1775045687438,
+        "updatedAt": 1775045952881
+      },
+      {
+        "title": "hello",
+        "template": "modern",
+        "accentColor": "#0d9488",
+        "isPublic": false,
+        "personalInfo": {
+          "fullName": "",
+          "email": "",
+          "phone": "",
+          "location": "",
+          "website": "",
+          "linkedin": "",
+          "github": "",
+          "jobTitle": ""
+        },
+        "summary": "",
+        "experience": [],
+        "education": [],
+        "projects": [],
+        "skills": [],
+        "userId": "108145474553490922356",
+        "id": "lzm1070mneuk4am",
+        "createdAt": 1774975457470,
+        "updatedAt": 1774989228106
+      },
+      {
+        "title": "Software Engineer Resume",
+        "template": "modern",
+        "accentColor": "#ea580c",
+        "isPublic": false,
+        "personalInfo": {
+          "fullName": "ANSH NARAYAN CHATURVEDI",
+          "email": "vineetachaturvedi11@gmail.com",
+          "phone": "+919044570726",
+          "location": "Varanasi",
+          "website": "hello.com",
+          "linkedin": "linkedin.com",
+          "github": "",
+          "jobTitle": "Full Stack developer"
+        },
+        "summary": "Dynamic Full Stack Developer with a proven ability to deliver high-quality, scalable web applications from conception to deployment. Adept at leveraging modern front-end technologies to create intuitive user experiences and crafting robust back-end systems and APIs. Expert in database architecture and management, ensuring seamless integration and optimal performance across the full software development lifecycle.",
+        "experience": [
+          {
+            "id": "z7thkx6mndndjs9",
+            "jobTitle": "SDE",
+            "company": "Google",
+            "location": "Banglore",
+            "startDate": "2025-01",
+            "endDate": "2026-06",
+            "current": false,
+            "description": "• Designed and implemented a core real-time data processing pipeline for Google Search, reducing query latency by 15% and improving result relevance for over 500 million daily active users.\n• Spearheaded the optimization of a critical backend microservice for Google Photos, decreasing critical error rates by 30% and achieving 99.999% uptime, ensuring seamless access for billions of global users.\n• Developed a new internal diagnostic tool leveraged by over 1,500 engineers across multiple Google product teams, automating root cause analysis and reducing average incident resolution time by 25%.\n• Led the integration of a novel machine learning model into Google Ads' bidding platform, collaborating with 3 cross-functional teams to boost campaign performance by 12% and generate an estimated $50 million in additional annual revenue."
+          }
+        ],
+        "education": [
+          {
+            "id": "fu6zwiemnedasr2",
+            "degree": "B.Tech CSE",
+            "institution": "IIT M",
+            "location": "Mumbai",
+            "startDate": "",
+            "endDate": "",
+            "gpa": "8.5/10",
+            "description": ""
+          }
+        ],
+        "projects": [
+          {
+            "id": "qafhmv4mnedbhjt",
+            "name": "AI resume builder",
+            "description": "huhdcudygcgcyegcydfgcvyefgcysfgvcygcvbyesfdcbyghecbygsf",
+            "technologies": "REACt NOde",
+            "link": "",
+            "github": ""
+          }
+        ],
+        "skills": [
+          "cdhcdjhgcbhdfbcbhfgvchfvhfcbshfcbyfcv"
+        ],
+        "userId": "108145474553490922356",
+        "id": "h254ouymndmxnmj",
+        "createdAt": 1774902185947,
+        "updatedAt": 1774988732072
+      }
+    ]
+  }
+}

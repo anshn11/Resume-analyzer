@@ -3,6 +3,40 @@
 @tailwind utilities;
 
 @layer components {
+  .builder-shell {
+    background:
+      radial-gradient(circle at top left, rgba(14, 165, 233, 0.12), transparent 32%),
+      radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 28%),
+      linear-gradient(180deg, #f8fafc 0%, #eef2ff 52%, #f8fafc 100%);
+  }
+  .builder-topbar {
+    @apply bg-white/85 border-b border-slate-200 backdrop-blur-md;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  }
+  .builder-stepbar {
+    @apply bg-white/70 border-b border-slate-200 backdrop-blur-md;
+  }
+  .builder-preview-panel {
+    background:
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.65), transparent 28%),
+      linear-gradient(180deg, #e2e8f0 0%, #dbe4f1 100%);
+  }
+  .builder-preview-frame {
+    @apply bg-white rounded-[28px] border border-slate-200 overflow-hidden;
+    box-shadow: 0 25px 80px rgba(15, 23, 42, 0.18);
+  }
+  .builder-card {
+    @apply bg-white;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+  }
+  .builder-card:hover {
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+  }
+  .builder-section-intro {
+    @apply rounded-[24px] border border-slate-200 bg-white/80 px-4 py-4;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  }
+
   /* Buttons */
   .btn-primary {
     @apply inline-flex items-center justify-center font-bold text-white transition-all duration-300 rounded-full;
@@ -80,6 +114,13 @@
   .bg-grid-slate-100 {
     background-image: radial-gradient(circle, #f1f5f9 1px, transparent 1px);
     background-size: 20px 20px;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 

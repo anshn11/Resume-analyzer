@@ -6,7 +6,7 @@ import { getResumes, createResume, deleteResume } from '../lib/storage';
 import { EMPTY_RESUME, TEMPLATES } from '../lib/utils';
 import {
   Plus, FileText, Trash2, Pencil, Sparkles,
-  Clock, LayoutDashboard
+  Clock, LayoutDashboard, Upload, ScanSearch
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
@@ -19,7 +19,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 1, y: 0 },
   visible: { 
     opacity: 1, 
     y: 0,
@@ -34,25 +34,122 @@ export default function Dashboard() {
   const [creating, setCreating]   = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle]   = useState('');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadText, setUploadText] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  useEffect(() => { setResumes(getResumes()); }, []);
-
-  const handleCreate = () => {
-    if (!newTitle.trim()) return;
-    setCreating(true);
-    const r = createResume({
-      ...EMPTY_RESUME,
-      title:  newTitle.trim(),
-      userId: user?.uid || 'local',
-    });
-    navigate(`/builder/${r.id}`);
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
-  const handleDelete = (id, e) => {
+  useEffect(() => {
+    if (!user) {
+      setResumes([]);
+      return;
+    }
+
+    let active = true;
+
+    (async () => {
+      try {
+        const items = await getResumes(user?.uid);
+        console.log('[Dashboard] resumes loaded:', items?.length, items);
+        if (active) setResumes(items);
+      } catch (error) {
+        console.error('Failed to load resumes', error);
+        if (active) showToast('Your session expired. Please sign in again.', 'error');
+        if (active) setResumes([]);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.uid]);
+
+  const handleCreate = async () => {
+    if (!newTitle.trim()) return;
+    if (!user?.uid) {
+      showToast('Please sign in again to create a resume.', 'error');
+      navigate('/login');
+      return;
+    }
+    setCreating(true);
+    try {
+      const r = await createResume({
+        ...EMPTY_RESUME,
+        title:  newTitle.trim(),
+        userId: user.uid,
+      });
+      navigate(`/builder/${r.id}`);
+    } catch (error) {
+      console.error('Failed to create resume', error);
+      showToast('Could not create resume. Please sign in again and retry.', 'error');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (id, e) => {
     e.stopPropagation();
     if (!confirm('Delete this resume? This cannot be undone.')) return;
-    deleteResume(id);
-    setResumes(getResumes());
+    try {
+      await deleteResume(id);
+      setResumes(await getResumes(user?.uid));
+    } catch (error) {
+      console.error('Failed to delete resume', error);
+      showToast('Could not delete resume right now.', 'error');
+    }
+  };
+
+  const handleUploadFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      if (!text.trim()) return;
+      setUploadText(text);
+      if (!uploadTitle.trim()) {
+        setUploadTitle(file.name.replace(/\.[^.]+$/, ''));
+      }
+    } catch {
+      alert('Could not read that file. Try a text-based resume file or paste the resume text manually.');
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const handleCreateUploadedResume = async () => {
+    if (!uploadTitle.trim() || !uploadText.trim()) return;
+    if (!user?.uid) {
+      showToast('Please sign in again to upload a resume.', 'error');
+      navigate('/login');
+      return;
+    }
+    setUploading(true);
+    try {
+      const r = await createResume({
+        ...EMPTY_RESUME,
+        title: uploadTitle.trim(),
+        sourceType: 'uploaded',
+        rawText: uploadText.trim(),
+        userId: user.uid,
+      });
+      setResumes(await getResumes(user?.uid));
+      setShowUploadModal(false);
+      setUploadTitle('');
+      setUploadText('');
+      navigate(`/uploaded-review/${r.id}`);
+    } catch (error) {
+      console.error('Failed to upload resume', error);
+      showToast('Could not save uploaded resume. Please sign in again and retry.', 'error');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const timeAgo = (ts) => {
@@ -67,7 +164,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50/50 bg-grid-slate-100">
-      <Navbar />
+      {/* Navbar is rendered by App.jsx — do not add it here again */}
       <div className="max-w-7xl mx-auto px-6 pt-28 pb-16">
 
         {/* Header Section */}
@@ -108,18 +205,32 @@ export default function Dashboard() {
                 Your career journey continues here. Build, optimize, and manage your resumes with the power of Gemini AI.
               </motion.p>
             </div>
-            <motion.button 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn-primary text-base px-8 py-4 rounded-2xl shadow-glow-lg group" 
-              onClick={() => setShowModal(true)}
-            >
-              <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" /> 
-              <span>Create New Resume</span>
-            </motion.button>
+            <div className="flex flex-wrap gap-3">
+              <motion.button 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn-primary text-base px-8 py-4 rounded-2xl shadow-glow-lg group" 
+                onClick={() => setShowModal(true)}
+              >
+                <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" /> 
+                <span>Create New Resume</span>
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.58 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn-secondary text-base px-8 py-4 rounded-2xl group"
+                onClick={() => setShowUploadModal(true)}
+              >
+                <Upload size={18} className="group-hover:-translate-y-0.5 transition-transform duration-300" />
+                <span>Upload Resume</span>
+              </motion.button>
+            </div>
           </div>
         </motion.div>
 
@@ -180,7 +291,6 @@ export default function Dashboard() {
         ) : (
           <motion.div 
             variants={containerVariants}
-            initial="hidden"
             animate="visible"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
           >
@@ -200,28 +310,49 @@ export default function Dashboard() {
 
             {resumes.map(r => {
               const template = TEMPLATES.find(t => t.id === r.template) || TEMPLATES[0];
+              const isUploaded = r.sourceType === 'uploaded';
               return (
                 <motion.div
                   key={r.id}
                   variants={itemVariants}
                   whileHover={{ y: -8, scale: 1.02 }}
                   className="bg-white border border-slate-200 rounded-3xl overflow-hidden cursor-pointer hover:border-primary-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 transition-all duration-300 group flex flex-col shadow-sm"
-                  onClick={() => navigate(`/builder/${r.id}`)}
+                  onClick={() => navigate(isUploaded ? `/uploaded-review/${r.id}` : `/builder/${r.id}`)}
                 >
                   {/* Visual Preview Thumbnail */}
                   <div className="h-44 bg-slate-50 relative overflow-hidden flex items-center justify-center p-6 border-b border-slate-100">
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-transparent opacity-50" />
                     <div className="w-full h-full glass-card rounded-xl overflow-hidden shadow-sm scale-95 group-hover:scale-100 transition-transform duration-300 flex flex-col">
-                      <div className="h-10 w-full" style={{ background: r.accentColor || '#7c3aed', opacity: 0.8 }} />
-                      <div className="p-3 space-y-2">
-                        <div className="h-2 w-3/4 bg-slate-800/80 rounded-full" />
-                        <div className="h-1.5 w-1/2 bg-slate-200 rounded-full" />
-                        <div className="space-y-1 pt-1">
-                          <div className="h-1 w-full bg-slate-100 rounded-full" />
-                          <div className="h-1 w-full bg-slate-100 rounded-full" />
-                          <div className="h-1 w-2/3 bg-slate-100 rounded-full" />
+                      {isUploaded ? (
+                        <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4 flex flex-col justify-between">
+                          <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">
+                            <Upload size={11} /> Uploaded Resume
+                          </div>
+                          <div className="space-y-2">
+                            <div className="h-2.5 w-3/4 bg-white/90 rounded-full" />
+                            <div className="h-1.5 w-2/3 bg-white/35 rounded-full" />
+                            <div className="h-1 w-full bg-white/15 rounded-full" />
+                            <div className="h-1 w-full bg-white/15 rounded-full" />
+                            <div className="h-1 w-4/5 bg-white/15 rounded-full" />
+                          </div>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-[10px] font-bold">
+                            <ScanSearch size={11} /> ATS Review
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="h-10 w-full" style={{ background: r.accentColor || '#7c3aed', opacity: 0.8 }} />
+                          <div className="p-3 space-y-2">
+                            <div className="h-2 w-3/4 bg-slate-800/80 rounded-full" />
+                            <div className="h-1.5 w-1/2 bg-slate-200 rounded-full" />
+                            <div className="space-y-1 pt-1">
+                              <div className="h-1 w-full bg-slate-100 rounded-full" />
+                              <div className="h-1 w-full bg-slate-100 rounded-full" />
+                              <div className="h-1 w-2/3 bg-slate-100 rounded-full" />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   
@@ -232,7 +363,7 @@ export default function Dashboard() {
                     </h3>
                     <div className="flex items-center gap-3 mb-5">
                       <span className="text-[10px] uppercase tracking-wider font-extrabold text-primary-500 bg-primary-50 px-2 py-0.5 rounded-md">
-                        {template.label}
+                        {isUploaded ? 'Uploaded' : template.label}
                       </span>
                       <span className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
                         <Clock size={12} /> {timeAgo(r.updatedAt)}
@@ -244,9 +375,9 @@ export default function Dashboard() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className="btn-primary text-xs px-4 py-2.5 rounded-xl flex-1 font-bold tracking-tight shadow-sm"
-                        onClick={e => { e.stopPropagation(); navigate(`/builder/${r.id}`); }}
+                        onClick={e => { e.stopPropagation(); navigate(isUploaded ? `/uploaded-review/${r.id}` : `/builder/${r.id}`); }}
                       >
-                        <Pencil size={12} className="mr-1.5" /> Edit Resume
+                        {isUploaded ? <><ScanSearch size={12} className="mr-1.5" /> Review ATS</> : <><Pencil size={12} className="mr-1.5" /> Edit Resume</>}
                       </motion.button>
                       <button
                         className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 hover:rotate-12 transition-all duration-200 border border-slate-100"
@@ -300,6 +431,76 @@ export default function Dashboard() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showUploadModal && (
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            onClick={() => setShowUploadModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h2 className="text-2xl font-extrabold mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>Upload Resume for ATS Review</h2>
+              <p className="text-slate-500 text-sm mb-6">Upload a text-based resume file or paste resume text to save it and run ATS scoring.</p>
+              <div className="grid gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="form-label">Resume Title</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="e.g. Backend Engineer Imported Resume"
+                    value={uploadTitle}
+                    onChange={e => setUploadTitle(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="form-label">Upload File</label>
+                  <label className="border-2 border-dashed border-slate-200 rounded-2xl px-5 py-6 text-center text-sm text-slate-500 hover:border-primary-300 hover:bg-primary-50/40 transition-colors cursor-pointer">
+                    <input type="file" className="hidden" accept=".txt,.md,.text,.csv,.json" onChange={handleUploadFile} />
+                    <span className="inline-flex items-center gap-2 font-semibold text-slate-700">
+                      <Upload size={16} /> Choose a text-based resume file
+                    </span>
+                    <div className="text-xs text-slate-400 mt-2">Supported now: `.txt`, `.md`, `.text`, `.csv`, `.json` or paste text below.</div>
+                  </label>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="form-label">Resume Text</label>
+                  <textarea
+                    className="form-input min-h-[240px]"
+                    placeholder="Paste your resume text here if you are not uploading a text file..."
+                    value={uploadText}
+                    onChange={e => setUploadText(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end mt-6">
+                <button className="btn-ghost" onClick={() => setShowUploadModal(false)}>Cancel</button>
+                <button className="btn-primary" onClick={handleCreateUploadedResume} disabled={uploading || !uploadTitle.trim() || !uploadText.trim()}>
+                  {uploading ? <><div className="spinner" /> Saving…</> : <><Upload size={16} /> Save & Review ATS</>}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={`fixed bottom-6 right-6 px-5 py-3.5 rounded-2xl text-sm font-semibold shadow-xl z-50 ${toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-gradient-primary text-white'}`}
+          >
+            {toast.msg}
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
